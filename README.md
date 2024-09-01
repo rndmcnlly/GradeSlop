@@ -1,8 +1,6 @@
-# 🎈 Blank app template
+# GradeSlop
 
-A simple Streamlit app template for you to modify!
-
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://blank-app-template.streamlit.app/)
+I'm a self-service tool intended to let you apply natural language text generation prompts to student submission data pulled from Canvas. I'm intended to be hosted on the [Streamlit Community Cloud](https://streamlit.io/cloud).
 
 ### How to run it on your own machine
 
