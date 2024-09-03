@@ -10,9 +10,13 @@ if not canvas_client:
     st.error("Canvas API not configured.")
     st.stop()
 
-course = canvas_client.get_course(st.session_state["SELECTED_COURSE_ID"])
-assignment = course.get_assignment(st.session_state["SELECTED_ASSIGNMENT_ID"])
-submission = assignment.get_submission(st.session_state["SELECTED_USER_ID"])
+try:
+    course = canvas_client.get_course(st.session_state["SELECTED_COURSE_ID"])
+    assignment = course.get_assignment(st.session_state["SELECTED_ASSIGNMENT_ID"])
+    submission = assignment.get_submission(st.session_state["SELECTED_USER_ID"])
+except Exception as e:
+    st.switch_page("pages/submissions.py")
+    
 # user = client.get_user(st.session_state["SELECTED_USER_ID"])
 
 # st.subheader(user)

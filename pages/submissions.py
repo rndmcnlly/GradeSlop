@@ -14,7 +14,7 @@ if not canvas_client:
 try:
     course = canvas_client.get_course(st.session_state["SELECTED_COURSE_ID"])
     assignment = course.get_assignment(st.session_state["SELECTED_ASSIGNMENT_ID"])
-except canvasapi.exceptions.ResourceDoesNotExist as e:
+except Exception as e:
     st.switch_page("pages/assignments.py")
 
 st.header(course)
