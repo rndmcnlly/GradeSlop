@@ -5,11 +5,11 @@ from streamlit_local_storage import LocalStorage
 
 ls = LocalStorage()
 
-def _restore_local_state(name):
+def restore_local_state(name):
     if item := ls.getItem(name):
         st.session_state[name] = item
 
-def _prompt_key(name, *, default="", type="default"):
+def prompt_key(name, *, default="", type="default"):
     local_default = ls.getItem(name)
     if local_default:
         use_default = local_default
@@ -36,58 +36,17 @@ def _prompt_key(name, *, default="", type="default"):
             key="delete_" + name,
         )
 
-@st.cache_resource(ttl=60)
-def get_canvas_client(api_key, api_url):
-    if not api_key:
-        return None
-    try:
-        client = canvasapi.Canvas(api_url, api_key)
-        user = client.get_current_user()
-        return client
-    except canvasapi.exceptions.InvalidAccessToken as e:
-        return None
-
-
-def get_current_canvas_client():
-    try:
-        _restore_local_state("CANVAS_ACCESS_TOKEN")
-        _restore_local_state("CANVAS_API_URL")
-        return get_canvas_client(
-            st.session_state.CANVAS_ACCESS_TOKEN, st.session_state.CANVAS_API_URL
-        )
-    except AttributeError:
-        st.write("Canvas API not configured.")
-        st.stop()
-
-
-@st.cache_resource(ttl=60)
-def get_openai_client(api_key, base_url):
-    if not api_key:
-        return None
-    try:
-        client = openai.Client(api_key=api_key, base_url=base_url)
-        models = client.models.list()
-        assert models.data
-        return client
-    except openai.AuthenticationError as e:
-        return None
-    except openai.APIConnectionError as e:
-        return None
-
-
-def get_current_openai_client():
-    try:
-        _restore_local_state("OPENAI_API_KEY")
-        _restore_local_state("OPENAI_BASE_URL")
-        return get_openai_client(
-            st.session_state.OPENAI_API_KEY, st.session_state.OPENAI_BASE_URL
-        )
-    except AttributeError:
-        st.switch_page("openai")
+@st.cache_resource(ttl=3600, show_spinner="Getting OpenAI models list...")
+def get_models(base_url, api_key):
+    return openai.Client(api_key=api_key, base_url=base_url).models.list().data
 
 @st.cache_resource(ttl=3600, show_spinner="Getting courses...")
 def get_courses(api_url, api_key):
     return list(canvasapi.Canvas(api_url, api_key).get_courses())
+
+@st.cache_resource(ttl=3600, show_spinner="Getting user...")
+def get_user(api_url, api_key):
+    return canvasapi.Canvas(api_url, api_key).get_current_user()
 
 @st.cache_resource(ttl=3600, show_spinner="Getting assignments...")
 def get_assignments(api_url, api_key, course_id):

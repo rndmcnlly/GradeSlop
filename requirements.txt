@@ -2,3 +2,4 @@ streamlit
 openai
 canvasapi
 streamlit-local-storage
+beautifulsoup4

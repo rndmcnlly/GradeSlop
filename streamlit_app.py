@@ -19,39 +19,34 @@ def overview_page():
 
 
 def canvas_setup_page():
-
     st.header("Canvas Access Token")
-    utils._prompt_key("CANVAS_ACCESS_TOKEN", type="password")
-    utils._prompt_key("CANVAS_API_URL", default="https://canvas.ucsc.edu")
-
-    canvas_client = utils.get_canvas_client(
-        st.session_state.CANVAS_ACCESS_TOKEN, st.session_state.CANVAS_API_URL
-    )
-    if canvas_client:
+    utils.prompt_key("CANVAS_ACCESS_TOKEN", type="password")
+    utils.prompt_key("CANVAS_API_URL", default="https://canvas.ucsc.edu")
+    try:
+        user = utils.get_user(st.session_state.CANVAS_API_URL, st.session_state.CANVAS_ACCESS_TOKEN)
         st.success("Canvas API access is available.")
-        st.write(f"You are **{canvas_client.get_current_user()}**.")
-    else:
+        st.write(f"You are **{user}**.")
+    except Exception as e:
         st.error("Canvas API access is unavailable. Check your access token.")
 
 
 def openai_setup_page():
     st.header("OpenAI")
-    utils._prompt_key("OPENAI_API_KEY", type="password")
-    utils._prompt_key("OPENAI_BASE_URL", default="https://api.openai.com/v1")
+    utils.prompt_key("OPENAI_API_KEY", type="password")
+    utils.prompt_key("OPENAI_BASE_URL", default="https://api.openai.com/v1")
 
-    openai_client = utils.get_openai_client(
-        st.session_state.OPENAI_API_KEY, st.session_state.OPENAI_BASE_URL
-    )
-    if openai_client:
+    try:
+        models = utils.get_models(st.session_state.OPENAI_BASE_URL, st.session_state.OPENAI_API_KEY)
         st.success("OpenAI API access is available.")
         md = "Available GPT models:\n"
         md += "\n".join(
             f"- {model.id}"
-            for model in openai_client.models.list().data
+            for model in models
             if model.id.startswith("gpt-")
         )
         st.write(md)
-    else:
+    except Exception as e:
+        st.error(e)
         st.error("OpenAI models unavailable. Check your API key.")
 
 
