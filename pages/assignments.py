@@ -1,16 +1,9 @@
 import streamlit as st
 import utils
-import re
 
 st.title("Assignments")
 
-canvas_client = utils.get_current_canvas_client()
-if not canvas_client:
-    st.error("Canvas API not configured.")
-    st.stop()
-
-with st.spinner("Loading your courses..."):
-    courses = canvas_client.get_courses()
+courses = utils.get_courses(st.session_state.CANVAS_API_URL, st.session_state.CANVAS_ACCESS_TOKEN)
 
 courses_by_id = {course.id: course for course in courses}
 course_ids = list(courses_by_id.keys())
@@ -32,8 +25,7 @@ if not course:
     st.error("Select a valid course above.")
     st.stop()
 
-with st.spinner("Loading assignments for that course..."):
-    assignments = course.get_assignments()
+assignments = utils.get_assignments(st.session_state.CANVAS_API_URL, st.session_state.CANVAS_ACCESS_TOKEN, st.session_state.SELECTED_COURSE_ID)
 
 assignments_by_id = {assignment.id: assignment for assignment in assignments}
 assignment_ids = list(assignments_by_id.keys())
@@ -56,6 +48,11 @@ if not assignment:
     st.error("Select a valid assignment above.")
     st.stop()
 
-st.write(f"Selected assignment: **{assignment}**")
-if st.button("View submissions", type="primary"):
+st.write("View submissions for this assignment:")
+if st.button(str(assignment), type="primary"):
     st.switch_page("pages/submissions.py")
+
+if st.button("Reload Canvas data"):
+    utils.get_courses.clear()
+    utils.get_assignments.clear()
+    st.rerun()
