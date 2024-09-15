@@ -1,7 +1,6 @@
 import streamlit as st
-import utils
 import re
-
+from streamlit_local_storage import LocalStorage
 
 def overview_page():
     st.title("GradeSlop")
@@ -18,37 +17,68 @@ def overview_page():
     )
 
 
-def canvas_setup_page():
-    st.header("Canvas Access Token")
-    utils.prompt_key("CANVAS_ACCESS_TOKEN", type="password")
-    utils.prompt_key("CANVAS_API_URL", default="https://canvas.ucsc.edu")
-    try:
-        user = utils.get_user(st.session_state.CANVAS_API_URL, st.session_state.CANVAS_ACCESS_TOKEN)
-        st.success("Canvas API access is available.")
-        st.write(f"You are **{user}**.")
-    except Exception as e:
-        st.error("Canvas API access is unavailable. Check your access token.")
+def make_setup_page(name, key, instructions=""):
+    def setup_page():
+        st.header(name)
+        if key in st.session_state:
+            st.write(f"We have your {name} for the current session.")
+            if st.button("Forget it"):
+                del st.session_state[key]
+                st.rerun()
+        elif key in st.secrets:
+            st.write(f"We have your {name} in the application's secrets.")
+            if st.button("Use secret"):
+                st.session_state[key] = st.secrets[key]
+                st.rerun()
+        else:
+            ls = LocalStorage()
+            if ls_value := ls.getItem(key):
+                st.write(f"We have your {name} in the browser's local storage.")
+                if st.button("Use local", type="primary"):
+                    st.session_state[key] = ls_value
+                    st.rerun()
+                if st.button("Forget it", type="secondary"):
+                    ls.deleteItem(key)
+                    st.rerun()
+            else:
+                st.write(
+                    f"We need your {name}. {instructions} Once you provide your details here, it will only be saved in your browser, not on the server."
+                )
+                if value := st.text_input(name, type="password"):
+                    st.session_state[key] = value
+                    ls.setItem(key, value)
+                    st.rerun()
+
+    return setup_page
 
 
-def openai_setup_page():
-    st.header("OpenAI")
-    utils.prompt_key("OPENAI_API_KEY", type="password")
-    utils.prompt_key("OPENAI_BASE_URL", default="https://api.openai.com/v1")
-
-    try:
-        models = utils.get_models(st.session_state.OPENAI_BASE_URL, st.session_state.OPENAI_API_KEY)
-        st.success("OpenAI API access is available.")
-        md = "Available GPT models:\n"
-        md += "\n".join(
-            f"- {model.id}"
-            for model in models
-            if model.id.startswith("gpt-")
-        )
-        st.write(md)
-    except Exception as e:
-        st.error(e)
-        st.error("OpenAI models unavailable. Check your API key.")
-
+setup_page_specs = [
+    dict(
+        name="Canvas Access Token",
+        key="CANVAS_ACCESS_TOKEN",
+        instructions="Follow [these instructions](https://community.canvaslms.com/t5/Canvas-Basics-Guide/How-do-I-manage-API-access-tokens-in-my-user-account/ta-p/615312) to generate one.",
+    ),
+    dict(
+        name="Canvas API URL",
+        key="CANVAS_API_URL",
+        instructions="Typically this is something like `https://canvas.<your_institution>.edu`.",
+    ),
+    dict(
+        name="OpenAI API Key",
+        key="OPENAI_API_KEY",
+        instructions="Get an API key from the [OpenAI API site](https://platform.openai.com/signup).",
+    ),
+    dict(
+        name="OpenAI API URL",
+        key="OPENAI_API_URL",
+        instructions="Typically this is something like `https://api.openai.com/v1`.",
+    ),
+    dict(
+        name="OpenAI Model Name",
+        key="OPENAI_MODEL_NAME",
+        instructions="You can get a list of models using the OpenAI API.",
+    ),
+]
 
 with st.sidebar:
     if url := st.text_input(
@@ -56,42 +86,62 @@ with st.sidebar:
     ):
 
         if match := re.match(
-            r".*/courses/(\d+)/gradebook/speed_grader\?assignment_id=(\d+)&student_id=(\d+)",
+            r"(.*)/courses/(\d+)/gradebook/speed_grader\?assignment_id=(\d+)&student_id=(\d+)",
             url,
         ):
             if st.button("Critique this submission"):
-                st.session_state["SELECTED_COURSE_ID"] = match.group(1)
-                st.session_state["SELECTED_ASSIGNMENT_ID"] = match.group(2)
-                st.session_state["SELECTED_USER_ID"] = match.group(3)
+                st.session_state["CANVAS_API_URL"] = match.group(1)
+                st.session_state["SELECTED_COURSE_ID"] = match.group(2)
+                st.session_state["SELECTED_ASSIGNMENT_ID"] = match.group(3)
+                st.session_state["SELECTED_USER_ID"] = match.group(4)
                 st.switch_page("pages/critiques.py")
         elif match := re.match(
-            r".*/courses/(\d+)/assignments/(\d+)/submissions/(\d+)", url
+            r"(.*)/courses/(\d+)/assignments/(\d+)/submissions/(\d+)", url
         ):
             if st.button("Critique this submission"):
-                st.session_state["SELECTED_COURSE_ID"] = match.group(1)
-                st.session_state["SELECTED_ASSIGNMENT_ID"] = match.group(2)
-                st.session_state["SELECTED_USER_ID"] = match.group(3)
+                st.session_state["CANVAS_API_URL"] = match.group(1)
+                st.session_state["SELECTED_COURSE_ID"] = match.group(2)
+                st.session_state["SELECTED_ASSIGNMENT_ID"] = match.group(3)
+                st.session_state["SELECTED_USER_ID"] = match.group(4)
                 st.switch_page("pages/critiques.py")
-        elif match := re.match(r".*/courses/(\d+)/assignments/(\d+)", url):
+        elif match := re.match(r"(.*)/courses/(\d+)/assignments/(\d+)", url):
             if st.button("View this assignment"):
-                st.session_state["SELECTED_COURSE_ID"] = match.group(1)
-                st.session_state["SELECTED_ASSIGNMENT_ID"] = match.group(2)
+                st.session_state["CANVAS_API_URL"] = match.group(1)
+                st.session_state["SELECTED_COURSE_ID"] = match.group(2)
+                st.session_state["SELECTED_ASSIGNMENT_ID"] = match.group(3)
                 st.switch_page("pages/submissions.py")
-        elif match := re.match(r".*/courses/(\d+)", url):
+        elif match := re.match(r"(.*)/courses/(\d+)", url):
             if st.button("View this course"):
-                st.session_state["SELECTED_COURSE_ID"] = match.group(1)
+                st.session_state["CANVAS_API_URL"] = match.group(1)
+                st.session_state["SELECTED_COURSE_ID"] = match.group(2)
                 st.switch_page("pages/assignments.py")
         else:
             st.error("Invalid URL")
 
 
-st.navigation(
-    [
-        st.Page(overview_page, title="Overview", url_path="home", default=True),
-        st.Page(canvas_setup_page, title="Canvas Access Token", url_path="canvas"),
-        st.Page(openai_setup_page, title="OpenAI API Key", url_path="openai"),
-        st.Page("pages/assignments.py", title="Assignments", url_path="assignments"),
-        st.Page("pages/submissions.py", title="Submissions", url_path="submissions"),
-        st.Page("pages/critiques.py", title="Critiques", url_path="critiques"),
-    ]
-).run()
+page = st.navigation(
+    {
+        "Overview": [
+            st.Page(overview_page, title="Overview", default=True),
+        ],
+        "Configuration": [
+            st.Page(
+                make_setup_page(spec["name"], spec["key"], spec["instructions"]),
+                title=spec["name"],
+                url_path=spec["key"],
+            )
+            for spec in setup_page_specs
+        ],
+        "Pages": [
+            st.Page(
+                "pages/assignments.py", title="Assignments", url_path="assignments"
+            ),
+            st.Page(
+                "pages/submissions.py", title="Submissions", url_path="submissions"
+            ),
+            st.Page("pages/critiques.py", title="Critiques", url_path="critiques"),
+        ],
+    }
+)
+
+page.run()
