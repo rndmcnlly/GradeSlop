@@ -35,3 +35,7 @@ def get_submission(api_url, api_key, course_id, assignment_id, user_id):
     course = canvasapi.Canvas(api_url, api_key).get_course(course_id)
     assignment = course.get_assignment(assignment_id)
     return assignment.get_submission(user_id)
+
+def die(message):
+    st.warning(message)
+    st.stop()

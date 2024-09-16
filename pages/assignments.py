@@ -3,6 +3,11 @@ import utils
 
 st.title("Assignments")
 
+if "CANVAS_API_URL" not in st.session_state:
+    utils.die("Please set the Canvas API URL in the settings.")
+elif "CANVAS_ACCESS_TOKEN" not in st.session_state:
+    utils.die("Please set the Canvas access token in the settings.")
+
 courses = utils.get_courses(st.session_state.CANVAS_API_URL, st.session_state.CANVAS_ACCESS_TOKEN)
 
 courses_by_id = {course.id: course for course in courses}

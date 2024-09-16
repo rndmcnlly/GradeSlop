@@ -3,6 +3,16 @@ import utils
 
 st.title("Submissions")
 
+if "CANVAS_API_URL" not in st.session_state:
+    utils.die("Please set the Canvas API URL in the settings.")
+elif "CANVAS_ACCESS_TOKEN" not in st.session_state:
+    utils.die("Please set the Canvas access token in the settings.")
+elif "SELECTED_COURSE_ID" not in st.session_state:
+    utils.die("Please select a course in the assignments page.")
+elif "SELECTED_ASSIGNMENT_ID" not in st.session_state:
+    utils.die("Please select an assignment in the assignments page.")
+
+
 submissions = utils.get_submissions(
     st.session_state.CANVAS_API_URL,
     st.session_state.CANVAS_ACCESS_TOKEN,

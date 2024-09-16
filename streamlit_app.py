@@ -124,15 +124,7 @@ page = st.navigation(
         "Overview": [
             st.Page(overview_page, title="Overview", default=True),
         ],
-        "Configuration": [
-            st.Page(
-                make_setup_page(spec["name"], spec["key"], spec["instructions"]),
-                title=spec["name"],
-                url_path=spec["key"],
-            )
-            for spec in setup_page_specs if spec["key"] not in st.secrets
-        ],
-        "Pages": [
+        "Course data": [
             st.Page(
                 "pages/assignments.py", title="Assignments", url_path="assignments"
             ),
@@ -140,6 +132,14 @@ page = st.navigation(
                 "pages/submissions.py", title="Submissions", url_path="submissions"
             ),
             st.Page("pages/critiques.py", title="Critiques", url_path="critiques"),
+        ],
+        "Settings": [
+            st.Page(
+                make_setup_page(spec["name"], spec["key"], spec["instructions"]),
+                title=spec["name"],
+                url_path=spec["key"],
+            )
+            for spec in setup_page_specs if spec["key"] not in st.secrets
         ],
     }
 )

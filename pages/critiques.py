@@ -6,6 +6,17 @@ import bs4
 
 st.title("Critiques")
 
+if "CANVAS_API_URL" not in st.session_state:
+    utils.die("Please set the Canvas API URL in the settings.")
+elif "CANVAS_ACCESS_TOKEN" not in st.session_state:
+    utils.die("Please set the Canvas access token in the settings.")
+elif "SELECTED_COURSE_ID" not in st.session_state:
+    utils.die("Please select a course in the assignments page.")
+elif "SELECTED_ASSIGNMENT_ID" not in st.session_state:
+    utils.die("Please select an assignment in the assignments page.")
+elif "SELECTED_USER_ID" not in st.session_state:
+    utils.die("Please select a submission in the submissions page.")
+
 students = utils.get_gradeable_students(
     st.session_state.CANVAS_API_URL,
     st.session_state.CANVAS_ACCESS_TOKEN,
@@ -66,7 +77,7 @@ with st.popover("Context"):
 
 st.subheader("Critique")
 
-openai_client = openai.Client(api_key=st.session_state.OPENAI_API_KEY, base_url=st.session_state.OPENAI_BASE_URL)
+openai_client = openai.Client(api_key=st.session_state.OPENAI_API_KEY, base_url=st.session_state.OPENAI_API_URL)
 
 with st.chat_message("assistant"):
         st.write_stream(
