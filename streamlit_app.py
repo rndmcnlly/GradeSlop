@@ -1,6 +1,7 @@
 import streamlit as st
 import re
-from streamlit_local_storage import LocalStorage
+import extra_streamlit_components as stx
+
 
 def overview_page():
     st.title("GradeSlop")
@@ -17,36 +18,36 @@ def overview_page():
     )
 
 
+@st.cache_resource
+def get_cookie_manager():
+    return stx.CookieManager()
+
+
 def make_setup_page(name, key, instructions=""):
     def setup_page():
         st.header(name)
         if key in st.session_state:
             st.write(f"We have your {name} for the current session.")
-            if st.button("Forget it"):
+            if st.button("Forget session value"):
                 del st.session_state[key]
                 st.rerun()
-        elif key in st.secrets:
-            st.write(f"We have your {name} in the application's secrets.")
-            if st.button("Use secret"):
-                st.session_state[key] = st.secrets[key]
-                st.rerun()
         else:
-            ls = LocalStorage()
-            if ls_value := ls.getItem(key):
-                st.write(f"We have your {name} in the browser's local storage.")
-                if st.button("Use local", type="primary"):
-                    st.session_state[key] = ls_value
+            cookie_manager = get_cookie_manager()
+            if cookie_value := cookie_manager.get(key):
+                st.write(f"We have your {name} in the browser's cookies.")
+                if st.button("Use cookie value", type="primary"):
+                    st.session_state[key] = cookie_value
                     st.rerun()
-                if st.button("Forget it", type="secondary"):
-                    ls.deleteItem(key)
+                if st.button("Forget cookie value", type="secondary"):
+                    cookie_manager.delete(key)
                     st.rerun()
             else:
                 st.write(
-                    f"We need your {name}. {instructions} Once you provide your details here, it will only be saved in your browser, not on the server."
+                    f"We need your {name}. {instructions} Once you provide your details here, it will only be saved in your browser's cookies, not on the server."
                 )
                 if value := st.text_input(name, type="password"):
                     st.session_state[key] = value
-                    ls.setItem(key, value)
+                    cookie_manager.set(key, value)
                     st.rerun()
 
     return setup_page
@@ -73,12 +74,11 @@ setup_page_specs = [
         key="OPENAI_API_URL",
         instructions="Typically this is something like `https://api.openai.com/v1`.",
     ),
-    dict(
-        name="OpenAI Model Name",
-        key="OPENAI_MODEL_NAME",
-        instructions="You can get a list of models using the OpenAI API.",
-    ),
 ]
+
+for spec in setup_page_specs:
+    if spec["key"] in st.secrets:
+        st.session_state[spec["key"]] = st.secrets[spec["key"]]
 
 with st.sidebar:
     if url := st.text_input(
@@ -130,7 +130,7 @@ page = st.navigation(
                 title=spec["name"],
                 url_path=spec["key"],
             )
-            for spec in setup_page_specs
+            for spec in setup_page_specs if spec["key"] not in st.secrets
         ],
         "Pages": [
             st.Page(

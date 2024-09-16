@@ -1,5 +1,5 @@
 streamlit
 openai
 canvasapi
-streamlit-local-storage
+extra-streamlit-components
 beautifulsoup4
